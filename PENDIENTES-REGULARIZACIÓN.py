@@ -1,6 +1,3 @@
-pip install openpyxl
-pip install pandas
-pip install xlswriter
 import streamlit as st
 import pandas as pd
 from io import BytesIO
