@@ -3,3 +3,4 @@ pandas
 openpyxl
 XlsxWriter
 streamlit==1.29.0
+plotly
