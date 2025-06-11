@@ -34,47 +34,36 @@ df = cargar_datos()
 df["FECHA_ARCHIVO"] = pd.to_datetime(df["FECHA_ARCHIVO"]).dt.date
 df["STATUS A DETALLE"] = df["STATUS A DETALLE"].str.upper()
 
-# --- Crear base evolutiva (agrupación de pendientes por fecha y filtros clave) ---
+# --- Crear base de pendientes no completados ---
 df_pendientes_total = df[df["STATUS A DETALLE"] != "COMPLETADO"].copy()
-df_evolutivo = df_pendientes_total.groupby([
-    "FECHA_ARCHIVO", "REGIÓN", "SUB.REGIÓN", "LOCACIÓN", "MESA", "RUTA"]
-).size().reset_index(name="TOTAL_PENDIENTES")
 
 # --- Mostrar solo los pendientes del último día para la tabla principal ---
 fecha_max = df["FECHA_ARCHIVO"].max()
 df_ultima_fecha = df_pendientes_total[df_pendientes_total["FECHA_ARCHIVO"] == fecha_max].copy()
 
-# --- Filtros en cascada ---
+# --- Filtros en cascada para la tabla ---
 region = st.selectbox("🌎 REGIÓN", ["Todas"] + sorted(df["REGIÓN"].dropna().unique()), key="region")
 if region != "Todas":
-    df_evolutivo = df_evolutivo[df_evolutivo["REGIÓN"] == region]
     df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["REGIÓN"] == region]
 
-if region != "Todas":
-    subregion_options = ["Todas"] + sorted(df[df["REGIÓN"] == region]["SUB.REGIÓN"].dropna().unique())
-else:
-    subregion_options = ["Todas"] + sorted(df["SUB.REGIÓN"].dropna().unique())
+subregion_options = ["Todas"] + sorted(df[df["REGIÓN"] == region]["SUB.REGIÓN"].dropna().unique()) if region != "Todas" else ["Todas"] + sorted(df["SUB.REGIÓN"].dropna().unique())
 subregion = st.selectbox("🌏 SUB.REGIÓN", subregion_options, key="subregion")
 if subregion != "Todas":
-    df_evolutivo = df_evolutivo[df_evolutivo["SUB.REGIÓN"] == subregion]
     df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["SUB.REGIÓN"] == subregion]
 
 locaciones = df["LOCACIÓN"].dropna().unique()
 locacion = st.selectbox("🏢 LOCACIÓN", ["Todas"] + sorted(locaciones), key="locacion")
 if locacion != "Todas":
-    df_evolutivo = df_evolutivo[df_evolutivo["LOCACIÓN"] == locacion]
     df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["LOCACIÓN"] == locacion]
 
 mesas = df["MESA"].dropna().unique()
 mesa = st.selectbox("💼 MESA", ["Todas"] + sorted(mesas), key="mesa")
 if mesa != "Todas":
-    df_evolutivo = df_evolutivo[df_evolutivo["MESA"] == mesa]
     df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["MESA"] == mesa]
 
 rutas = df["RUTA"].dropna().astype(str).unique()
 ruta = st.selectbox("🛣️ RUTA", ["Todas"] + sorted(rutas), key="ruta")
 if ruta != "Todas":
-    df_evolutivo = df_evolutivo[df_evolutivo["RUTA"].astype(str) == ruta]
     df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["RUTA"].astype(str) == ruta]
 
 # --- Filtro Código solo para tabla ---
@@ -87,32 +76,38 @@ if codigo != "Todos":
 st.markdown(f"🔍 {df_ultima_fecha.shape[0]} pendientes encontrados (fecha {fecha_max})")
 st.dataframe(df_ultima_fecha, use_container_width=True)
 
-# --- Mostrar gráfico de evolución con filtros aplicados ---
-df_pendientes_filtrado = df_pendientes_total.copy()
+# --- Filtros para el gráfico de evolución ---
+st.subheader("📈 Gráfico de Evolución de Pendientes")
+region_grafico = st.selectbox("🌎 REGIÓN (Gráfico)", ["Todas"] + sorted(df["REGIÓN"].dropna().unique()), key="region_grafico")
+subregion_grafico = st.selectbox("🌏 SUB.REGIÓN (Gráfico)", ["Todas"] + sorted(df["SUB.REGIÓN"].dropna().unique()), key="subregion_grafico")
+locacion_grafico = st.selectbox("🏢 LOCACIÓN (Gráfico)", ["Todas"] + sorted(df["LOCACIÓN"].dropna().unique()), key="locacion_grafico")
+mesa_grafico = st.selectbox("💼 MESA (Gráfico)", ["Todas"] + sorted(df["MESA"].dropna().unique()), key="mesa_grafico")
+ruta_grafico = st.selectbox("🛣️ RUTA (Gráfico)", ["Todas"] + sorted(df["RUTA"].dropna().astype(str).unique()), key="ruta_grafico")
 
-if region != "Todas":
-    df_pendientes_filtrado = df_pendientes_filtrado[df_pendientes_filtrado["REGIÓN"] == region]
+# Filtrar los datos para el gráfico
+df_grafico = df_pendientes_total.copy()
 
-if subregion != "Todas":
-    df_pendientes_filtrado = df_pendientes_filtrado[df_pendientes_filtrado["SUB.REGIÓN"] == subregion]
+if region_grafico != "Todas":
+    df_grafico = df_grafico[df_grafico["REGIÓN"] == region_grafico]
 
-if locacion != "Todas":
-    df_pendientes_filtrado = df_pendientes_filtrado[df_pendientes_filtrado["LOCACIÓN"] == locacion]
+if subregion_grafico != "Todas":
+    df_grafico = df_grafico[df_grafico["SUB.REGIÓN"] == subregion_grafico]
 
-if mesa != "Todas":
-    df_pendientes_filtrado = df_pendientes_filtrado[df_pendientes_filtrado["MESA"] == mesa]
+if locacion_grafico != "Todas":
+    df_grafico = df_grafico[df_grafico["LOCACIÓN"] == locacion_grafico]
 
-if ruta != "Todas":
-    df_pendientes_filtrado = df_pendientes_filtrado[df_pendientes_filtrado["RUTA"].astype(str) == ruta]
+if mesa_grafico != "Todas":
+    df_grafico = df_grafico[df_grafico["MESA"] == mesa_grafico]
 
-df_pendientes_filtrado = df_pendientes_filtrado.dropna(subset=["CÓDIGO"])
+if ruta_grafico != "Todas":
+    df_grafico = df_grafico[df_grafico["RUTA"].astype(str) == ruta_grafico]
 
-# Contar el total de códigos (permitiendo duplicados en diferentes fechas, pero contando todos para cada fecha)
-df_chart = df_pendientes_filtrado.groupby("FECHA_ARCHIVO")["CÓDIGO"].count().reset_index()
+# Agrupar por fecha y contar todos los códigos (permitiendo duplicados en diferentes fechas)
+df_chart = df_grafico.groupby("FECHA_ARCHIVO")["CÓDIGO"].count().reset_index()
 df_chart = df_chart.rename(columns={"CÓDIGO": "TOTAL_PENDIENTES"}).sort_values("FECHA_ARCHIVO")
 
+# Mostrar gráfico
 if not df_chart.empty:
-    st.subheader("📈 Evolución de pendientes por fecha")
     fig = px.line(df_chart, x="FECHA_ARCHIVO", y="TOTAL_PENDIENTES", markers=True)
     fig.update_layout(
         xaxis_title="Fecha",
@@ -138,7 +133,7 @@ st.download_button(
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
-excel_data2 = exportar_excel(df_evolutivo, "EvolucionPendientes")
+excel_data2 = exportar_excel(df_pendientes_total, "EvolucionPendientes")
 st.download_button(
     label="📥 Descargar evolución de pendientes",
     data=excel_data2,
