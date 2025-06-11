@@ -40,10 +40,10 @@ fecha_max = df["FECHA_ARCHIVO"].max()
 df_ultima_fecha = df_pendientes_total[df_pendientes_total["FECHA_ARCHIVO"] == fecha_max].copy()
 
 # Filtro adicional por código de cliente (solo para la primera tabla)
-codigos = df_pendientes_total["CDCLIE"].dropna().unique()
+codigos = df_pendientes_total["CÓDIGO"].dropna().unique()
 codigo = st.selectbox("🔢 CÓDIGO DEL CLIENTE", ["Todos"] + sorted(codigos), key="codigo")
 if codigo != "Todos":
-    df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["CDCLIE"] == codigo]
+    df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["CÓDIGO"] == codigo]
 
 # FILTROS EN CASCADA
 region = st.selectbox("🌎 REGIÓN", ["Todas"] + sorted(df["REGIÓN"].dropna().unique()), key="region")
@@ -64,7 +64,7 @@ if locacion != "Todas":
     df_pendientes_total = df_pendientes_total[df_pendientes_total["LOCACIÓN"] == locacion]
 
 mesas = df_pendientes_total["MESA"].dropna().unique()
-mesa = st.selectbox("💼 MESA", ["Todas"] + sorted(mesas), key="mesa")
+mesa = st.selectbox("MESA", ["Todas"] + sorted(mesas), key="mesa")
 if mesa != "Todas":
     df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["MESA"] == mesa]
     df_pendientes_total = df_pendientes_total[df_pendientes_total["MESA"] == mesa]
