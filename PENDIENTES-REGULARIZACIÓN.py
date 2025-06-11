@@ -39,12 +39,6 @@ df_pendientes_total = df[df["STATUS A DETALLE"] != "COMPLETADO"].copy()
 fecha_max = df["FECHA_ARCHIVO"].max()
 df_ultima_fecha = df_pendientes_total[df_pendientes_total["FECHA_ARCHIVO"] == fecha_max].copy()
 
-# Filtro adicional por código de cliente (solo para la primera tabla)
-codigos = df_pendientes_total["CÓDIGO"].dropna().unique()
-codigo = st.selectbox("🔢 CÓDIGO DEL CLIENTE", ["Todos"] + sorted(codigos), key="codigo")
-if codigo != "Todos":
-    df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["CÓDIGO"] == codigo]
-
 # FILTROS EN CASCADA
 region = st.selectbox("🌎 REGIÓN", ["Todas"] + sorted(df["REGIÓN"].dropna().unique()), key="region")
 if region != "Todas":
@@ -64,7 +58,7 @@ if locacion != "Todas":
     df_pendientes_total = df_pendientes_total[df_pendientes_total["LOCACIÓN"] == locacion]
 
 mesas = df_pendientes_total["MESA"].dropna().unique()
-mesa = st.selectbox("MESA", ["Todas"] + sorted(mesas), key="mesa")
+mesa = st.selectbox("💼 MESA", ["Todas"] + sorted(mesas), key="mesa")
 if mesa != "Todas":
     df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["MESA"] == mesa]
     df_pendientes_total = df_pendientes_total[df_pendientes_total["MESA"] == mesa]
@@ -74,6 +68,12 @@ ruta = st.selectbox("🛣️ RUTA", ["Todas"] + sorted(rutas), key="ruta")
 if ruta != "Todas":
     df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["RUTA"].astype(str) == ruta]
     df_pendientes_total = df_pendientes_total[df_pendientes_total["RUTA"].astype(str) == ruta]
+
+# Filtro por CÓDIGO
+codigos = df_pendientes_total["CÓDIGO"].dropna().unique()
+codigo = st.selectbox("🧾 CÓDIGO DE CLIENTE", ["Todos"] + sorted(codigos), key="codigo")
+if codigo != "Todos":
+    df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["CÓDIGO"] == codigo]
 
 # Mostrar tabla de últimos pendientes
 st.markdown(f"🔍 {df_ultima_fecha.shape[0]} pendientes encontrados (fecha {fecha_max})")
@@ -100,12 +100,12 @@ pivot = pivot.sort_index(axis=1)
 # Reiniciar índice y renombrar columnas
 pivot = pivot.reset_index()
 pivot.columns.name = None
-pivot.columns = [col.strftime("%d/%m/%Y") if isinstance(col, (pd.Timestamp, datetime)) else col for col in pivot.columns]
+pivot.columns = [col.strftime("%d/%m/%Y") if isinstance(col, (pd.Timestamp, datetime, datetime.date)) else col for col in pivot.columns]
 
 # Mostrar matriz
 st.dataframe(pivot, use_container_width=True)
 
-# Botones de descarga
+# Función para exportar Excel con formato
 def exportar_excel(df_export, nombre):
     output = BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
@@ -123,14 +123,15 @@ def exportar_excel(df_export, nombre):
             "border": 1
         })
 
-        for col_num, value in enumerate(df_export.columns):
-            col_str = str(value)
-            max_width = max(df_export[col_str].astype(str).map(len).max(), len(col_str)) + 2
-            worksheet.set_column(col_num, col_num, max_width)
-            worksheet.write(0, col_num, col_str, header_format)
+        for col_num, column in enumerate(df_export.columns):
+            col_values = df_export[column].astype(str)
+            max_len = max(col_values.map(len).max(), len(str(column))) + 2
+            worksheet.set_column(col_num, col_num, max_len)
+            worksheet.write(0, col_num, str(column), header_format)
 
     return output.getvalue()
 
+# Botones de descarga
 excel_data1 = exportar_excel(df_ultima_fecha, "PendientesUltimoDia")
 st.download_button(
     label="📥 Descargar Excel de Pendientes Último Día",
