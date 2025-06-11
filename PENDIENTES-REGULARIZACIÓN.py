@@ -116,7 +116,7 @@ def exportar_excel(df_export, nombre):
 
 excel_data1 = exportar_excel(df_ultima_fecha, "PendientesUltimoDia")
 st.download_button(
-    label="📥 Descargar Excel de Pendientes Último Día",
+    label="📥 Descargar Excel de Pendientes",
     data=excel_data1,
     file_name="pendientes_ultimo_dia.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -124,7 +124,7 @@ st.download_button(
 
 excel_data2 = exportar_excel(pivot, "MatrizPendientes")
 st.download_button(
-    label="📥 Descargar Excel de Matriz de Evolución",
+    label="📥 Descargar Excel de Avance de Pendientes",
     data=excel_data2,
     file_name="matriz_evolucion_pendientes.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
