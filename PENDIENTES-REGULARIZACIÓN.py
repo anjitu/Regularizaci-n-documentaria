@@ -39,7 +39,13 @@ df_pendientes_total = df[df["STATUS A DETALLE"] != "COMPLETADO"].copy()
 fecha_max = df["FECHA_ARCHIVO"].max()
 df_ultima_fecha = df_pendientes_total[df_pendientes_total["FECHA_ARCHIVO"] == fecha_max].copy()
 
-# FILTROS EN CASCADA
+# Filtro por CÓDIGO de cliente (solo para primera tabla)
+codigos = df_pendientes_total["CÓDIGO"].dropna().unique()
+codigo_cliente = st.selectbox("🔑 Filtrar por CÓDIGO de cliente", ["Todos"] + sorted(codigos), key="codigo_cliente")
+if codigo_cliente != "Todos":
+    df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["CÓDIGO"] == codigo_cliente]
+
+# FILTROS EN CASCADA (para ambas tablas)
 region = st.selectbox("🌎 REGIÓN", ["Todas"] + sorted(df["REGIÓN"].dropna().unique()), key="region")
 if region != "Todas":
     df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["REGIÓN"] == region]
@@ -94,37 +100,30 @@ pivot.columns = [col.strftime("%d/%m/%Y") if isinstance(col, (pd.Timestamp, date
 
 st.dataframe(pivot, use_container_width=True)
 
-# 💾 Botones de descarga con formato mejorado
-def exportar_excel(df_export, nombre_hoja):
+# Exportar Excel con estilo (encabezado con color y autoajuste)
+def exportar_excel(df_export, nombre):
     output = BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-        df_export.to_excel(writer, index=False, sheet_name=nombre_hoja)
+        df_export.to_excel(writer, index=False, sheet_name=nombre)
         workbook = writer.book
-        worksheet = writer.sheets[nombre_hoja]
+        worksheet = writer.sheets[nombre]
 
-        # Estilo encabezado
-        formato_encabezado = workbook.add_format({
-            'bold': True,
-            'bg_color': '#FFEB9C',  # Amarillo claro
-            'border': 1,
-            'align': 'center'
+        header_format = workbook.add_format({
+            "bold": True,
+            "bg_color": "#DCE6F1",
+            "border": 1
         })
 
-        for col_num, col_name in enumerate(df_export.columns):
-            # Aplicar formato al encabezado
-            worksheet.write(0, col_num, col_name, formato_encabezado)
-            # Ajustar ancho automático
-            max_len = max(
-                df_export[col_name].astype(str).map(len).max(),
-                len(str(col_name))
-            ) + 2
-            worksheet.set_column(col_num, col_num, max_len)
+        for col_num, value in enumerate(df_export.columns):
+            worksheet.write(0, col_num, value, header_format)
+            max_width = max(df_export[value].astype(str).map(len).max(), len(value)) + 2
+            worksheet.set_column(col_num, col_num, max_width)
 
     return output.getvalue()
 
 excel_data1 = exportar_excel(df_ultima_fecha, "PendientesUltimoDia")
 st.download_button(
-    label="📥 Descargar Excel de Pendientes Último Día",
+    label="📥 Descargar Excel de Pendientes",
     data=excel_data1,
     file_name="pendientes_ultimo_dia.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -132,7 +131,7 @@ st.download_button(
 
 excel_data2 = exportar_excel(pivot, "MatrizPendientes")
 st.download_button(
-    label="📥 Descargar Excel de Matriz de Evolución",
+    label="📥 Descargar Excel de Avance de pendientes",
     data=excel_data2,
     file_name="matriz_evolucion_pendientes.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
