@@ -16,7 +16,11 @@ def cargar_datos():
         "CEO-LISTA DE PENDIENTES-10.06.2025.xlsx",
         "NORTE-LISTA DE PENDIENTES-10.06.2025.xlsx",
         "LIMA-LISTA DE PENDIENTES-10.06.2025.xlsx",
-        "SUR-LISTA DE PENDIENTES-10.06.2025.xlsx"
+        "SUR-LISTA DE PENDIENTES-10.06.2025.xlsx",
+        "CEO-LISTA DE PENDIENTES-11.06.2025.xlsx",
+        "NORTE-LISTA DE PENDIENTES-11.06.2025.xlsx",
+        "LIMA-LISTA DE PENDIENTES-11.06.2025.xlsx",
+        "SUR-LISTA DE PENDIENTES-11.06.2025.xlsx"
     ]
     dfs = []
     for archivo in archivos:
