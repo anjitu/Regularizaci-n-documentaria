@@ -7,7 +7,6 @@ from io import BytesIO
 st.set_page_config(page_title="Reporte de Pendientes", layout="wide")
 st.title("📋 Reporte de Pendientes de Regularización Documentaria")
 
-# --- Cargar datos desde archivos Excel locales ---
 @st.cache_data
 def cargar_datos():
     archivos = [
@@ -34,10 +33,8 @@ df = cargar_datos()
 df["FECHA_ARCHIVO"] = pd.to_datetime(df["FECHA_ARCHIVO"]).dt.date
 df["STATUS A DETALLE"] = df["STATUS A DETALLE"].str.upper()
 
-# --- Base de pendientes no completados ---
 df_pendientes_total = df[df["STATUS A DETALLE"] != "COMPLETADO"].copy()
 
-# --- Filtros en cascada para la tabla de pendientes (última fecha) ---
 fecha_max = df["FECHA_ARCHIVO"].max()
 df_ultima_fecha = df_pendientes_total[df_pendientes_total["FECHA_ARCHIVO"] == fecha_max].copy()
 
@@ -45,10 +42,7 @@ region = st.selectbox("🌎 REGIÓN", ["Todas"] + sorted(df["REGIÓN"].dropna().
 if region != "Todas":
     df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["REGIÓN"] == region]
 
-if region != "Todas":
-    subregion_options = ["Todas"] + sorted(df[df["REGIÓN"] == region]["SUB.REGIÓN"].dropna().unique())
-else:
-    subregion_options = ["Todas"] + sorted(df["SUB.REGIÓN"].dropna().unique())
+subregion_options = ["Todas"] + sorted(df[df["REGIÓN"] == region]["SUB.REGIÓN"].dropna().unique()) if region != "Todas" else ["Todas"] + sorted(df["SUB.REGIÓN"].dropna().unique())
 subregion = st.selectbox("🌏 SUB.REGIÓN", subregion_options, key="subregion")
 if subregion != "Todas":
     df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["SUB.REGIÓN"] == subregion]
@@ -73,24 +67,18 @@ codigo = st.selectbox("🔢 CÓDIGO", ["Todos"] + sorted(codigos), key="codigo")
 if codigo != "Todos":
     df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["CÓDIGO"] == codigo]
 
-# --- Mostrar tabla de pendientes ---
 st.markdown(f"🔍 {df_ultima_fecha.shape[0]} pendientes encontrados (fecha {fecha_max})")
 st.dataframe(df_ultima_fecha, use_container_width=True)
 
-# --- Tabla dinámica para evolución de pendientes ---
 st.subheader("📈 Evolución de pendientes filtrable")
 
-# Filtros independientes para el gráfico
 region_g = st.selectbox("🌎 REGIÓN (Gráfico)", ["Todas"] + sorted(df["REGIÓN"].dropna().unique()), key="region_g")
 if region_g != "Todas":
     df_aux = df_pendientes_total[df_pendientes_total["REGIÓN"] == region_g]
 else:
     df_aux = df_pendientes_total.copy()
 
-if region_g != "Todas":
-    subregion_g_opt = ["Todas"] + sorted(df[df["REGIÓN"] == region_g]["SUB.REGIÓN"].dropna().unique())
-else:
-    subregion_g_opt = ["Todas"] + sorted(df["SUB.REGIÓN"].dropna().unique())
+subregion_g_opt = ["Todas"] + sorted(df[df["REGIÓN"] == region_g]["SUB.REGIÓN"].dropna().unique()) if region_g != "Todas" else ["Todas"] + sorted(df["SUB.REGIÓN"].dropna().unique())
 subregion_g = st.selectbox("🌏 SUB.REGIÓN (Gráfico)", subregion_g_opt, key="subregion_g")
 if subregion_g != "Todas":
     df_aux = df_aux[df_aux["SUB.REGIÓN"] == subregion_g]
@@ -110,7 +98,6 @@ ruta_g = st.selectbox("🛣️ RUTA (Gráfico)", ruta_g_opt, key="ruta_g")
 if ruta_g != "Todas":
     df_aux = df_aux[df_aux["RUTA"].astype(str) == ruta_g]
 
-# Agrupar y pivotear para la tabla dinámica
 df_evol = df_aux.groupby(
     ["REGIÓN", "SUB.REGIÓN", "LOCACIÓN", "MESA", "RUTA", "FECHA_ARCHIVO"]
 ).size().reset_index(name="TOTAL_PENDIENTES")
@@ -122,13 +109,11 @@ df_pivot = df_evol.pivot_table(
     fill_value=0
 ).reset_index()
 
-# Formatear nombres de columnas fechas
 df_pivot.columns.name = None
 df_pivot.columns = [col.strftime("%d/%m/%Y") if isinstance(col, (pd.Timestamp, datetime)) else col for col in df_pivot.columns]
 
 st.dataframe(df_pivot, use_container_width=True)
 
-# --- Gráfico de evolución ---
 df_melt = df_pivot.melt(
     id_vars=["REGIÓN", "SUB.REGIÓN", "LOCACIÓN", "MESA", "RUTA"],
     var_name="Fecha",
@@ -150,7 +135,6 @@ if not df_melt.empty:
 else:
     st.info("No hay datos suficientes para mostrar el gráfico evolutivo.")
 
-# --- Exportar tabla último día ---
 def exportar_excel(df_export, nombre):
     output = BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
@@ -172,4 +156,3 @@ st.download_button(
     file_name="evolucion_pendientes.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
-
