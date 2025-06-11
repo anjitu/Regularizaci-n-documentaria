@@ -39,13 +39,13 @@ df_pendientes_total = df[df["STATUS A DETALLE"] != "COMPLETADO"].copy()
 fecha_max = df["FECHA_ARCHIVO"].max()
 df_ultima_fecha = df_pendientes_total[df_pendientes_total["FECHA_ARCHIVO"] == fecha_max].copy()
 
-# Filtro por CÓDIGO de cliente (solo para primera tabla)
-codigos = df_pendientes_total["CÓDIGO"].dropna().unique()
-codigo_cliente = st.selectbox("🔑 Filtrar por CÓDIGO de cliente", ["Todos"] + sorted(codigos), key="codigo_cliente")
-if codigo_cliente != "Todos":
-    df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["CÓDIGO"] == codigo_cliente]
+# Filtro adicional por código de cliente (solo para la primera tabla)
+codigos = df_pendientes_total["CDCLIE"].dropna().unique()
+codigo = st.selectbox("🔢 CÓDIGO DEL CLIENTE", ["Todos"] + sorted(codigos), key="codigo")
+if codigo != "Todos":
+    df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["CDCLIE"] == codigo]
 
-# FILTROS EN CASCADA (para ambas tablas)
+# FILTROS EN CASCADA
 region = st.selectbox("🌎 REGIÓN", ["Todas"] + sorted(df["REGIÓN"].dropna().unique()), key="region")
 if region != "Todas":
     df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["REGIÓN"] == region]
@@ -86,6 +86,7 @@ df_evol = df_pendientes_total.groupby(
     ["REGIÓN", "SUB.REGIÓN", "LOCACIÓN", "MESA", "RUTA", "FECHA_ARCHIVO"]
 ).size().reset_index(name="TOTAL_PENDIENTES")
 
+# Crear matriz
 pivot = df_evol.pivot_table(
     index=["REGIÓN", "SUB.REGIÓN", "LOCACIÓN", "MESA", "RUTA"],
     columns="FECHA_ARCHIVO",
@@ -93,37 +94,46 @@ pivot = df_evol.pivot_table(
     fill_value=0
 )
 
+# Ordenar columnas por fecha
 pivot = pivot.sort_index(axis=1)
+
+# Reiniciar índice y renombrar columnas
 pivot = pivot.reset_index()
 pivot.columns.name = None
 pivot.columns = [col.strftime("%d/%m/%Y") if isinstance(col, (pd.Timestamp, datetime)) else col for col in pivot.columns]
 
+# Mostrar matriz
 st.dataframe(pivot, use_container_width=True)
 
-# Exportar Excel con estilo (encabezado con color y autoajuste)
+# Botones de descarga
 def exportar_excel(df_export, nombre):
     output = BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         df_export.to_excel(writer, index=False, sheet_name=nombre)
+
         workbook = writer.book
         worksheet = writer.sheets[nombre]
 
+        # Estilo encabezado
         header_format = workbook.add_format({
             "bold": True,
-            "bg_color": "#DCE6F1",
+            "text_wrap": True,
+            "valign": "center",
+            "fg_color": "#D9E1F2",
             "border": 1
         })
 
         for col_num, value in enumerate(df_export.columns):
-            worksheet.write(0, col_num, value, header_format)
-            max_width = max(df_export[value].astype(str).map(len).max(), len(value)) + 2
+            col_str = str(value)
+            max_width = max(df_export[col_str].astype(str).map(len).max(), len(col_str)) + 2
             worksheet.set_column(col_num, col_num, max_width)
+            worksheet.write(0, col_num, col_str, header_format)
 
     return output.getvalue()
 
 excel_data1 = exportar_excel(df_ultima_fecha, "PendientesUltimoDia")
 st.download_button(
-    label="📥 Descargar Excel de Pendientes",
+    label="📥 Descargar Excel de Pendientes Último Día",
     data=excel_data1,
     file_name="pendientes_ultimo_dia.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -131,7 +141,7 @@ st.download_button(
 
 excel_data2 = exportar_excel(pivot, "MatrizPendientes")
 st.download_button(
-    label="📥 Descargar Excel de Avance de pendientes",
+    label="📥 Descargar Excel de Matriz de Evolución",
     data=excel_data2,
     file_name="matriz_evolucion_pendientes.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
