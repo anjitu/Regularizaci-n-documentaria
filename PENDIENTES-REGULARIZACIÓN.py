@@ -9,7 +9,6 @@ st.title("📋 Reporte de Pendientes de Regularización Documentaria")
 
 # --- Cargar datos desde archivos Excel locales ---
 @st.cache_data
-
 def cargar_datos():
     archivos = [
         "CEO-LISTA DE PENDIENTES-09.06.2025.xlsx",
@@ -88,12 +87,38 @@ if codigo != "Todos":
 st.markdown(f"🔍 {df_ultima_fecha.shape[0]} pendientes encontrados (fecha {fecha_max})")
 st.dataframe(df_ultima_fecha, use_container_width=True)
 
-# --- Mostrar gráfico de evolución ---
-df_chart = df_evolutivo.groupby("FECHA_ARCHIVO")["TOTAL_PENDIENTES"].sum().reset_index()
+# --- Mostrar gráfico de evolución con filtros aplicados ---
+df_pendientes_filtrado = df_pendientes_total.copy()
+
+if region != "Todas":
+    df_pendientes_filtrado = df_pendientes_filtrado[df_pendientes_filtrado["REGIÓN"] == region]
+
+if subregion != "Todas":
+    df_pendientes_filtrado = df_pendientes_filtrado[df_pendientes_filtrado["SUB.REGIÓN"] == subregion]
+
+if locacion != "Todas":
+    df_pendientes_filtrado = df_pendientes_filtrado[df_pendientes_filtrado["LOCACIÓN"] == locacion]
+
+if mesa != "Todas":
+    df_pendientes_filtrado = df_pendientes_filtrado[df_pendientes_filtrado["MESA"] == mesa]
+
+if ruta != "Todas":
+    df_pendientes_filtrado = df_pendientes_filtrado[df_pendientes_filtrado["RUTA"].astype(str) == ruta]
+
+df_pendientes_filtrado = df_pendientes_filtrado.dropna(subset=["CÓDIGO"])
+
+# Contar el total de códigos (permitiendo duplicados en diferentes fechas, pero contando todos para cada fecha)
+df_chart = df_pendientes_filtrado.groupby("FECHA_ARCHIVO")["CÓDIGO"].count().reset_index()
+df_chart = df_chart.rename(columns={"CÓDIGO": "TOTAL_PENDIENTES"}).sort_values("FECHA_ARCHIVO")
+
 if not df_chart.empty:
     st.subheader("📈 Evolución de pendientes por fecha")
     fig = px.line(df_chart, x="FECHA_ARCHIVO", y="TOTAL_PENDIENTES", markers=True)
-    fig.update_layout(xaxis_title="Fecha", yaxis_title="Total de Pendientes")
+    fig.update_layout(
+        xaxis_title="Fecha",
+        yaxis_title="Total de Pendientes",
+        xaxis=dict(tickformat="%d-%m-%Y")
+    )
     st.plotly_chart(fig, use_container_width=True)
 else:
     st.info("No hay datos suficientes para mostrar el gráfico evolutivo.")
