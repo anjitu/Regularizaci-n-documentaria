@@ -17,7 +17,7 @@ def cargar_datos():
     for archivo in archivos:
         fecha_str = archivo.split("-")[-1].replace(".xlsx", "")
         fecha = datetime.strptime(fecha_str, "%d.%m.%Y").date()
-        df = pd.read_excel(archivo, sheet_name="BASE TOTAL", dtype=str)
+        df = pd.read_excel(archivo, sheet_name="Sheet1", dtype=str)
         df["ARCHIVO_ORIGEN"] = archivo
         df["FECHA_ARCHIVO"] = fecha
         dfs.append(df)
