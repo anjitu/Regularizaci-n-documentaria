@@ -84,7 +84,6 @@ pivot = df_evol.pivot_table(
 pivot = pivot.sort_index(axis=1)
 pivot = pivot.reset_index()
 pivot.columns.name = None
-
 pivot.columns = [col.strftime("%d/%m/%Y") if isinstance(col, (pd.Timestamp, datetime, date)) else col for col in pivot.columns]
 
 st.dataframe(pivot, use_container_width=True)
@@ -124,4 +123,3 @@ st.download_button(
     file_name="matriz_evolucion_pendientes.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
-
