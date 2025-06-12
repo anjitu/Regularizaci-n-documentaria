@@ -9,18 +9,9 @@ st.title("📋 Reporte de Pendientes de Regularización Documentaria")
 @st.cache_data
 def cargar_datos():
     archivos = [
-        "CEO-LISTA DE PENDIENTES-09.06.2025.xlsx",
-        "NORTE-LISTA DE PENDIENTES-09.06.2025.xlsx",
-        "LIMA-LISTA DE PENDIENTES-09.06.2025.xlsx",
-        "SUR-LISTA DE PENDIENTES-09.06.2025.xlsx",
-        "CEO-LISTA DE PENDIENTES-10.06.2025.xlsx",
-        "NORTE-LISTA DE PENDIENTES-10.06.2025.xlsx",
-        "LIMA-LISTA DE PENDIENTES-10.06.2025.xlsx",
-        "SUR-LISTA DE PENDIENTES-10.06.2025.xlsx",
-        "CEO-LISTA DE PENDIENTES-11.06.2025.xlsx",
-        "NORTE-LISTA DE PENDIENTES-11.06.2025.xlsx",
-        "LIMA-LISTA DE PENDIENTES-11.06.2025.xlsx",
-        "SUR-LISTA DE PENDIENTES-11.06.2025.xlsx"
+        "CONSOLIDADO_PENDIENTES_11.06.2025.xlsx",
+        "CONSOLIDADO_PENDIENTES_10.06.2025.xlsx",
+        "CONSOLIDADO_PENDIENTES_09.06.2025.xlsx"
     ]
     dfs = []
     for archivo in archivos:
