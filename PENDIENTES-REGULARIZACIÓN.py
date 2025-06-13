@@ -9,6 +9,7 @@ st.title("📋 Reporte de Pendientes de Regularización Documentaria")
 @st.cache_data
 def cargar_datos():
     archivos = [
+        "CONSOLIDADO_PENDIENTES-12.06.2025.xlsx",
         "CONSOLIDADO_PENDIENTES-11.06.2025.xlsx",
         "CONSOLIDADO_PENDIENTES-10.06.2025.xlsx",
         "CONSOLIDADO_PENDIENTES-09.06.2025.xlsx"
