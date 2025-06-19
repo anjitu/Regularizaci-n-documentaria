@@ -101,7 +101,7 @@ def to_excel_bytes(df_export):
 
         # Congelar primera fila y activar filtros
         worksheet.freeze_panes(1, 0)
-        worksheet.autofilter(0, 0, df_export.shape[0], df_export.shape[1] - 1)9
+        worksheet.autofilter(0, 0, df_export.shape[0], df_export.shape[1] - 1)  # ✅ corregido
 
     return output.getvalue()
 
@@ -113,4 +113,3 @@ st.download_button(
     file_name="pendientes_filtrados.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
-
