@@ -1,126 +1,116 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date
 from io import BytesIO
 
 st.set_page_config(page_title="Reporte de Pendientes", layout="wide")
-st.title("📋 Reporte de Pendientes de Regularización Documentaria")
+st.title("Consulta de Pendientes de Regularización Documentaria")
 
+# --- 1. Carga automática de archivos ---
 @st.cache_data
 def cargar_datos():
     archivos = [
-        "CONSOLIDADO_PENDIENTES-12.06.2025.xlsx",
-        "CONSOLIDADO_PENDIENTES-11.06.2025.xlsx",
-        "CONSOLIDADO_PENDIENTES-10.06.2025.xlsx",
-        "CONSOLIDADO_PENDIENTES-09.06.2025.xlsx"
+        "CONSOLIDADO_PENDIENTES-18.06.2025.xlsx"
     ]
     dfs = []
     for archivo in archivos:
-        fecha_str = archivo.split("-")[-1].replace(".xlsx", "")
-        fecha = datetime.strptime(fecha_str, "%d.%m.%Y").date()
-        df = pd.read_excel(archivo, sheet_name="Sheet1", dtype=str)
+        df = pd.read_excel(archivo, sheet_name="BASE TOTAL", dtype=str)
         df["ARCHIVO_ORIGEN"] = archivo
-        df["FECHA_ARCHIVO"] = fecha
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True)
 
 df = cargar_datos()
-df["FECHA_ARCHIVO"] = pd.to_datetime(df["FECHA_ARCHIVO"]).dt.date
-df["STATUS A DETALLE"] = df["STATUS A DETALLE"].str.upper()
 
-df_pendientes_total = df[df["STATUS A DETALLE"] != "COMPLETADO"].copy()
-fecha_max = df["FECHA_ARCHIVO"].max()
-df_ultima_fecha = df_pendientes_total[df_pendientes_total["FECHA_ARCHIVO"] == fecha_max].copy()
+# --- 2. Filtrar solo pendientes ---
+df_pendientes = df[df["STATUS A DETALLE"].str.upper() != "COMPLETADO"].copy()
 
-region = st.selectbox("🌎 REGIÓN", ["Todas"] + sorted(df["REGIÓN"].dropna().unique()), key="region")
-if region != "Todas":
-    df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["REGIÓN"] == region]
-    df_pendientes_total = df_pendientes_total[df_pendientes_total["REGIÓN"] == region]
+# --- 3. Filtros dependientes ---
+col1, col2, col3, col4, col5, col6 = st.columns(6)
 
-subregiones = df_pendientes_total["SUB.REGIÓN"].dropna().unique()
-subregion = st.selectbox("🌏 SUB.REGIÓN", ["Todas"] + sorted(subregiones), key="subregion")
-if subregion != "Todas":
-    df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["SUB.REGIÓN"] == subregion]
-    df_pendientes_total = df_pendientes_total[df_pendientes_total["SUB.REGIÓN"] == subregion]
+with col1:
+    region_opciones = [""] + sorted(df_pendientes["REGIÓN"].dropna().unique())
+    region = st.selectbox("🌎 REGIÓN", region_opciones)
 
-locaciones = df_pendientes_total["LOCACIÓN"].dropna().unique()
-locacion = st.selectbox("🏢 LOCACIÓN", ["Todas"] + sorted(locaciones), key="locacion")
-if locacion != "Todas":
-    df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["LOCACIÓN"] == locacion]
-    df_pendientes_total = df_pendientes_total[df_pendientes_total["LOCACIÓN"] == locacion]
+df_subreg = df_pendientes[df_pendientes["REGIÓN"] == region] if region else df_pendientes
+with col2:
+    subregion_opciones = [""] + sorted(df_subreg["SUB.REGIÓN"].dropna().unique())
+    subregion = st.selectbox("🗺️ SUB.REGIÓN", subregion_opciones)
 
-mesas = df_pendientes_total["MESA"].dropna().unique()
-mesa = st.selectbox("MESA", ["Todas"] + sorted(mesas), key="mesa")
-if mesa != "Todas":
-    df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["MESA"] == mesa]
-    df_pendientes_total = df_pendientes_total[df_pendientes_total["MESA"] == mesa]
+df_loc = df_subreg[df_subreg["SUB.REGIÓN"] == subregion] if subregion else df_subreg
+with col3:
+    locacion_opciones = [""] + sorted(df_loc["LOCACIÓN"].dropna().unique())
+    locacion = st.selectbox("🏢 LOCACIÓN", locacion_opciones)
 
-rutas = df_pendientes_total["RUTA"].dropna().astype(str).unique()
-ruta = st.selectbox("🛣️ RUTA", ["Todas"] + sorted(rutas), key="ruta")
-if ruta != "Todas":
-    df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["RUTA"].astype(str) == ruta]
-    df_pendientes_total = df_pendientes_total[df_pendientes_total["RUTA"].astype(str) == ruta]
+df_mesa = df_loc[df_loc["LOCACIÓN"] == locacion] if locacion else df_loc
+with col4:
+    mesa_opciones = [""] + sorted(df_mesa["MESA"].dropna().unique())
+    mesa = st.selectbox("MESA", mesa_opciones)
 
-codigos = df_pendientes_total["CÓDIGO"].dropna().unique()
-codigo = st.selectbox("🧾 CÓDIGO DE CLIENTE", ["Todos"] + sorted(codigos), key="codigo")
-if codigo != "Todos":
-    df_ultima_fecha = df_ultima_fecha[df_ultima_fecha["CÓDIGO"] == codigo]
+df_ruta = df_mesa[df_mesa["MESA"] == mesa] if mesa else df_mesa
+with col5:
+    ruta_opciones = [""] + sorted(df_ruta["RUTA"].dropna().astype(str).unique())
+    ruta = st.selectbox("🛣️ RUTA", ruta_opciones)
 
-st.markdown(f"🔍 {df_ultima_fecha.shape[0]} pendientes encontrados (fecha {fecha_max})")
-st.dataframe(df_ultima_fecha, use_container_width=True)
+with col6:
+    codigo_cliente_opciones = [""] + sorted(df_ruta["CÓDIGO"].dropna().astype(str).unique())
+    codigo_cliente = st.selectbox("🧾 CÓDIGO", codigo_cliente_opciones)
 
-st.subheader("🧮 Matriz de Evolución de Pendientes por Fecha")
+# --- 4. Aplicar filtros ---
+df_filtrado = df_ruta.copy()
+if ruta:
+    df_filtrado = df_filtrado[df_filtrado["RUTA"].astype(str) == ruta]
+if codigo_cliente:
+    df_filtrado = df_filtrado[df_filtrado["CÓDIGO"].astype(str) == codigo_cliente]
 
-df_evol = df_pendientes_total.groupby(
-    ["REGIÓN", "SUB.REGIÓN", "LOCACIÓN", "MESA", "RUTA", "FECHA_ARCHIVO"]
-).size().reset_index(name="TOTAL_PENDIENTES")
+# --- 5. Mostrar resultados ---
+st.markdown(f"🔍 {len(df_filtrado)} resultados encontrados")
+st.dataframe(df_filtrado, use_container_width=True)
 
-pivot = df_evol.pivot_table(
-    index=["REGIÓN", "SUB.REGIÓN", "LOCACIÓN", "MESA", "RUTA"],
-    columns="FECHA_ARCHIVO",
-    values="TOTAL_PENDIENTES",
-    fill_value=0
-)
-
-pivot = pivot.sort_index(axis=1)
-pivot = pivot.reset_index()
-pivot.columns.name = None
-pivot.columns = [col.strftime("%d/%m/%Y") if isinstance(col, (pd.Timestamp, datetime, date)) else col for col in pivot.columns]
-
-st.dataframe(pivot, use_container_width=True)
-
-def exportar_excel(df_export, nombre):
+# --- 6. Función para exportar Excel bonito ---
+def to_excel_bytes(df_export):
     output = BytesIO()
-    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-        df_export.to_excel(writer, index=False, sheet_name=nombre)
-        workbook = writer.book
-        worksheet = writer.sheets[nombre]
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df_export.to_excel(writer, index=False, sheet_name='Pendientes')
+        workbook  = writer.book
+        worksheet = writer.sheets['Pendientes']
+
+        # Formatos
         header_format = workbook.add_format({
-            "bold": True,
-            "text_wrap": True,
-            "valign": "center",
-            "fg_color": "#D9E1F2",
-            "border": 1
+            'bold': True,
+            'bg_color': '#C00000',   # Rojo oscuro
+            'font_color': 'white',
+            'border': 1
         })
-        for col_num, column in enumerate(df_export.columns):
-            col_values = df_export[column].astype(str)
-            max_len = max(col_values.map(len).max(), len(str(column))) + 2
-            worksheet.set_column(col_num, col_num, max_len)
-            worksheet.write(0, col_num, str(column), header_format)
+
+        yellow_header_format = workbook.add_format({
+            'bold': True,
+            'bg_color': '#FFF2CC',   # Amarillo claro
+            'border': 1
+        })
+
+        # Aplicar formato a encabezado
+        for col_num, column_name in enumerate(df_export.columns):
+            if column_name.upper() == "STATUS A DETALLE":
+                worksheet.write(0, col_num, column_name, yellow_header_format)
+            else:
+                worksheet.write(0, col_num, column_name, header_format)
+
+        # Ajustar ancho de columnas
+        for i, col in enumerate(df_export.columns):
+            col_width = max(df_export[col].astype(str).map(len).max(), len(col)) + 2
+            worksheet.set_column(i, i, col_width)
+
+        # Congelar primera fila y activar filtros
+        worksheet.freeze_panes(1, 0)
+        worksheet.autofilter(0, 0, df_export.shape[0], df_export.shape[1] - 1)9
+
     return output.getvalue()
 
-excel_data1 = exportar_excel(df_ultima_fecha, "PendientesUltimoDia")
+# --- 7. Botón para descargar Excel ---
+excel_data = to_excel_bytes(df_filtrado)
 st.download_button(
-    label="📥 Descargar Excel de Pendientes",
-    data=excel_data1,
-    file_name="pendientes_ultimo_dia.xlsx",
+    label="📥 Descargar Excel filtrado",
+    data=excel_data,
+    file_name="pendientes_filtrados.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
 
-excel_data2 = exportar_excel(pivot, "MatrizPendientes")
-st.download_button(
-    label="📥 Descargar Excel de Avance de Pendientes",
-    data=excel_data2,
-    file_name="matriz_evolucion_pendientes.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
