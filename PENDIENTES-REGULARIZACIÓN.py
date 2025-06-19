@@ -13,7 +13,7 @@ def cargar_datos():
     ]
     dfs = []
     for archivo in archivos:
-        df = pd.read_excel(archivo, sheet_name="BASE TOTAL", dtype=str)
+        df = pd.read_excel(archivo, sheet_name="Sheet1", dtype=str)
         df["ARCHIVO_ORIGEN"] = archivo
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True)
