@@ -9,11 +9,13 @@ st.title("Consulta de Pendientes de Regularización Documentaria")
 @st.cache_data
 def cargar_datos():
     archivos = [
-        "CONSOLIDADO_PENDIENTES-18.06.2025.xlsx"
+        "CONSOLIDADO_PENDIENTES-19.06.2025.xlsx"
     ]
+    columnas_a_eliminar = ["ESTADO FIRMA", "ESTADO ENVÍO", "ESTADO PROVEEDOR"]
     dfs = []
     for archivo in archivos:
         df = pd.read_excel(archivo, sheet_name="Sheet1", dtype=str)
+        df = df.drop(columns=[col for col in columnas_a_eliminar if col in df.columns])
         df["ARCHIVO_ORIGEN"] = archivo
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True)
@@ -101,7 +103,7 @@ def to_excel_bytes(df_export):
 
         # Congelar primera fila y activar filtros
         worksheet.freeze_panes(1, 0)
-        worksheet.autofilter(0, 0, df_export.shape[0], df_export.shape[1] - 1)  # ✅ corregido
+        worksheet.autofilter(0, 0, df_export.shape[0], df_export.shape[1] - 1)
 
     return output.getvalue()
 
