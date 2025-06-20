@@ -9,14 +9,16 @@ st.title("Consulta de Pendientes de Regularización Documentaria")
 @st.cache_data
 def cargar_datos():
     archivos = [
-        "CONSOLIDADO_PENDIENTES-19.06.2025.xlsx"
+        "CONSOLIDADO_PENDIENTES-18.06.2025.xlsx"
     ]
-    columnas_a_eliminar = ["ESTADO FIRMA
-(DNI SUBIDO AL FORMULARIO)", "ESTADO ENVÍO", "ESTADO PROVEEDOR"]
+    columnas_a_eliminar = ["ESTADO FIRMA", "ESTADO ENVÍO", "ESTADO PROVEEDOR"]
     dfs = []
     for archivo in archivos:
         df = pd.read_excel(archivo, sheet_name="Sheet1", dtype=str)
-        df = df.drop(columns=[col for col in columnas_a_eliminar if col in df.columns])
+        
+        # Eliminar columnas que contienen alguna de las frases clave
+        df = df.drop(columns=[col for col in df.columns if any(key in col for key in columnas_a_eliminar)])
+        
         df["ARCHIVO_ORIGEN"] = archivo
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True)
