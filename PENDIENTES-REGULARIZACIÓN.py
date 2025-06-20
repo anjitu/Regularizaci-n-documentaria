@@ -11,7 +11,7 @@ def cargar_datos():
     archivos = [
         "CONSOLIDADO_PENDIENTES-19.06.2025.xlsx"
     ]
-    columnas_a_eliminar = ["ESTADO FIRMA", "ESTADO ENVÍO", "ESTADO PROVEEDOR"]
+    columnas_a_eliminar = ["ESTADO FIRMA (DNI SUBIDO AL FORMULARIO)", "ESTADO ENVÍO", "ESTADO PROVEEDOR"]
     dfs = []
     for archivo in archivos:
         df = pd.read_excel(archivo, sheet_name="Sheet1", dtype=str)
