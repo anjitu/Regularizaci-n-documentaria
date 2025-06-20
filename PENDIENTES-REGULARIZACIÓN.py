@@ -15,10 +15,7 @@ def cargar_datos():
     dfs = []
     for archivo in archivos:
         df = pd.read_excel(archivo, sheet_name="Sheet1", dtype=str)
-        
-        # Eliminar columnas que contienen alguna de las frases clave
-        df = df.drop(columns=[col for col in df.columns if any(key in col for key in columnas_a_eliminar)])
-        
+        df = df.drop(columns=[col for col in columnas_a_eliminar if col in df.columns])
         df["ARCHIVO_ORIGEN"] = archivo
         dfs.append(df)
     return pd.concat(dfs, ignore_index=True)
