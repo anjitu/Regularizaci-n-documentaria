@@ -48,7 +48,7 @@ df_mesa = df_loc[df_loc["LOCACIÓN"] == locacion] if locacion else df_loc
 
 with col4:
     mesa_opciones = [""] + sorted(df_mesa["MESA"].dropna().unique())
-    mesa = st.selectbox("🪑 MESA", mesa_opciones)
+    mesa = st.selectbox("MESA", mesa_opciones)
 
 df_ruta = df_mesa[df_mesa["MESA"] == mesa] if mesa else df_mesa
 
