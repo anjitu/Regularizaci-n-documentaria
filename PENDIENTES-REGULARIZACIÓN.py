@@ -30,7 +30,7 @@ col0, col1, col2, col3, col4, col5, col6 = st.columns(7)
 
 with col0:
     segmento_opciones = [""] + sorted(df_pendientes["SEGMENTO"].dropna().unique())
-    segmento = st.selectbox("🏷️ SEGMENTO", segmento_opciones)
+    segmento = st.selectbox("SEGMENTO", segmento_opciones)
 
 df_segmento = df_pendientes[df_pendientes["SEGMENTO"] == segmento] if segmento else df_pendientes
 
