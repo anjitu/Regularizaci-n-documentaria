@@ -33,39 +33,43 @@ with col1:
     region = st.selectbox("🌎 REGIÓN", region_opciones)
 
 df_subreg = df_pendientes[df_pendientes["REGIÓN"] == region] if region else df_pendientes
+
 with col2:
     subregion_opciones = [""] + sorted(df_subreg["SUB.REGIÓN"].dropna().unique())
     subregion = st.selectbox("🗺️ SUB.REGIÓN", subregion_opciones)
 
 df_loc = df_subreg[df_subreg["SUB.REGIÓN"] == subregion] if subregion else df_subreg
+
 with col3:
     locacion_opciones = [""] + sorted(df_loc["LOCACIÓN"].dropna().unique())
     locacion = st.selectbox("🏢 LOCACIÓN", locacion_opciones)
 
 df_mesa = df_loc[df_loc["LOCACIÓN"] == locacion] if locacion else df_loc
+
 with col4:
     mesa_opciones = [""] + sorted(df_mesa["MESA"].dropna().unique())
-    mesa = st.selectbox("MESA", mesa_opciones)
+    mesa = st.selectbox("🪑 MESA", mesa_opciones)
 
 df_ruta = df_mesa[df_mesa["MESA"] == mesa] if mesa else df_mesa
+
 with col5:
     ruta_opciones = [""] + sorted(df_ruta["RUTA"].dropna().astype(str).unique())
     ruta = st.selectbox("🛣️ RUTA", ruta_opciones)
 
+df_segmento = df_ruta[df_ruta["RUTA"].astype(str) == ruta] if ruta else df_ruta
+
 with col6:
-    segmento_opciones = [""] + sorted(df_ruta["SEGMENTO"].dropna().astype(str).unique())
-    segmento = st.selectbox("SEGMENTO", codigo_segmento_opciones)
+    segmento_opciones = [""] + sorted(df_segmento["SEGMENTO"].dropna().unique())
+    segmento = st.selectbox("SEGMENTO", segmento_opciones)
+
+df_codigo = df_segmento[df_segmento["SEGMENTO"] == segmento] if segmento else df_segmento
 
 with col7:
-    codigo_cliente_opciones = [""] + sorted(df_ruta["CÓDIGO"].dropna().astype(str).unique())
+    codigo_cliente_opciones = [""] + sorted(df_codigo["CÓDIGO"].dropna().astype(str).unique())
     codigo_cliente = st.selectbox("🧾 CÓDIGO", codigo_cliente_opciones)
 
-# --- 4. Aplicar filtros ---
-df_filtrado = df_ruta.copy()
-if ruta:
-    df_filtrado = df_filtrado[df_filtrado["RUTA"].astype(str) == ruta]
-if ruta:
-    df_filtrado = df_filtrado[df_filtrado["SEGMENTO"].astype(str) == segmento]
+# --- 4. Aplicar filtros finales ---
+df_filtrado = df_codigo.copy()
 if codigo_cliente:
     df_filtrado = df_filtrado[df_filtrado["CÓDIGO"].astype(str) == codigo_cliente]
 
@@ -84,30 +88,27 @@ def to_excel_bytes(df_export):
         # Formatos
         header_format = workbook.add_format({
             'bold': True,
-            'bg_color': '#C00000',   # Rojo oscuro
+            'bg_color': '#C00000',
             'font_color': 'white',
             'border': 1
         })
 
         yellow_header_format = workbook.add_format({
             'bold': True,
-            'bg_color': '#FFF2CC',   # Amarillo claro
+            'bg_color': '#FFF2CC',
             'border': 1
         })
 
-        # Aplicar formato a encabezado
         for col_num, column_name in enumerate(df_export.columns):
             if column_name.upper() == "STATUS A DETALLE":
                 worksheet.write(0, col_num, column_name, yellow_header_format)
             else:
                 worksheet.write(0, col_num, column_name, header_format)
 
-        # Ajustar ancho de columnas
         for i, col in enumerate(df_export.columns):
             col_width = max(df_export[col].astype(str).map(len).max(), len(col)) + 2
             worksheet.set_column(i, i, col_width)
 
-        # Congelar primera fila y activar filtros
         worksheet.freeze_panes(1, 0)
         worksheet.autofilter(0, 0, df_export.shape[0], df_export.shape[1] - 1)
 
