@@ -25,29 +25,39 @@ df = cargar_datos()
 # --- 2. Filtrar solo pendientes ---
 df_pendientes = df[df["STATUS A DETALLE"].str.upper() != "COMPLETADO"].copy()
 
-# --- 3. Filtros dependientes ---
-col1, col2, col3, col4, col5, col6 = st.columns(6)
+# --- 3. Filtros dependientes incluyendo SEGMENTO ---
+col0, col1, col2, col3, col4, col5, col6 = st.columns(7)
+
+with col0:
+    segmento_opciones = [""] + sorted(df_pendientes["SEGMENTO"].dropna().unique())
+    segmento = st.selectbox("🏷️ SEGMENTO", segmento_opciones)
+
+df_segmento = df_pendientes[df_pendientes["SEGMENTO"] == segmento] if segmento else df_pendientes
 
 with col1:
-    region_opciones = [""] + sorted(df_pendientes["REGIÓN"].dropna().unique())
+    region_opciones = [""] + sorted(df_segmento["REGIÓN"].dropna().unique())
     region = st.selectbox("🌎 REGIÓN", region_opciones)
 
-df_subreg = df_pendientes[df_pendientes["REGIÓN"] == region] if region else df_pendientes
+df_subreg = df_segmento[df_segmento["REGIÓN"] == region] if region else df_segmento
+
 with col2:
     subregion_opciones = [""] + sorted(df_subreg["SUB.REGIÓN"].dropna().unique())
     subregion = st.selectbox("🗺️ SUB.REGIÓN", subregion_opciones)
 
 df_loc = df_subreg[df_subreg["SUB.REGIÓN"] == subregion] if subregion else df_subreg
+
 with col3:
     locacion_opciones = [""] + sorted(df_loc["LOCACIÓN"].dropna().unique())
     locacion = st.selectbox("🏢 LOCACIÓN", locacion_opciones)
 
 df_mesa = df_loc[df_loc["LOCACIÓN"] == locacion] if locacion else df_loc
+
 with col4:
     mesa_opciones = [""] + sorted(df_mesa["MESA"].dropna().unique())
     mesa = st.selectbox("MESA", mesa_opciones)
 
 df_ruta = df_mesa[df_mesa["MESA"] == mesa] if mesa else df_mesa
+
 with col5:
     ruta_opciones = [""] + sorted(df_ruta["RUTA"].dropna().astype(str).unique())
     ruta = st.selectbox("🛣️ RUTA", ruta_opciones)
@@ -56,7 +66,7 @@ with col6:
     codigo_cliente_opciones = [""] + sorted(df_ruta["CÓDIGO"].dropna().astype(str).unique())
     codigo_cliente = st.selectbox("🧾 CÓDIGO", codigo_cliente_opciones)
 
-# --- 4. Aplicar filtros ---
+# --- 4. Aplicar filtros finales ---
 df_filtrado = df_ruta.copy()
 if ruta:
     df_filtrado = df_filtrado[df_filtrado["RUTA"].astype(str) == ruta]
