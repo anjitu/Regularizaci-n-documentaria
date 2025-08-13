@@ -9,7 +9,7 @@ st.title("Consulta de Pendientes de Regularización Documentaria")
 @st.cache_data
 def cargar_datos():
     archivos = [
-        "CONSOLIDADO_PENDIENTES-04.08.2025.xlsx"
+        "CONSOLIDADO_PENDIENTES-12.08.2025.xlsx"
     ]
     columnas_a_eliminar = ["ESTADO FIRMA", "ESTADO ENVÍO", "ESTADO PROVEEDOR"]
     dfs = []
@@ -122,4 +122,5 @@ st.download_button(
     file_name="pendientes_filtrados.xlsx",
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 )
+
 
